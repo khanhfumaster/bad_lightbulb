@@ -1,11 +1,12 @@
 const axios = require('axios');
 const jsonfile = require('jsonfile')
+const _ = require('lodash');
 
-const fetchDataFromReddit = async (cursor) => {
+const fetchDataFromReddit = async (subreddit, cursor) => {
   console.log('Fetching.', { cursor });
   let response;
 
-  let url = 'https://www.reddit.com/r/Lightbulb/.json?count=25';
+  let url = `https://www.reddit.com/r/${subreddit}/.json?count=25`;
 
   if (cursor) {
       url = url + `&after=${cursor}`;
@@ -26,7 +27,7 @@ const fetchDataFromReddit = async (cursor) => {
   }
 }
 
-const getIdeas = async (numOfPages = 1) => {
+const getIdeas = async (subreddit, numOfPages = 1) => {
   const ideas = [];
 
   let cursor;
@@ -34,7 +35,7 @@ const getIdeas = async (numOfPages = 1) => {
   for (let i = 0; i < numOfPages; i++ ) {
 
       if (!done) {
-          const data = await fetchDataFromReddit(cursor);
+          const data = await fetchDataFromReddit(subreddit, cursor);
           
           data.posts.forEach((post) => {
               if (post.data && post.data.url) {
@@ -57,9 +58,22 @@ const getIdeas = async (numOfPages = 1) => {
 
 }
 
-getIdeas(1000)
-  .then(ideas => {
+const promises = [
+  getIdeas('Lightbulb', 1000), 
+  getIdeas('shittyideas', 1000),
+  getIdeas('INEEEEDIT', 1000),
+  getIdeas('CrazyIdeas', 1000),
+  getIdeas('MyTheoryIs', 1000)
+];
+  
+
+Promise.all(promises)
+  .then(ideasValues => {
+    const ideas = _.flatten(ideasValues);
     const file = './ideas.json'
+
+    console.log('Writing ideas.json', { length: ideas.length })
+
     jsonfile.writeFile(file, ideas, function (err) {
         if (err) {
             console.log('Failed to write data.', { error: err });
